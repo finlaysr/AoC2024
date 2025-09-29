@@ -1,9 +1,7 @@
 use std::fs;
 
 fn main() {
-    println!("Hello, world!");
-
-    let file_path = "/home/finlay/Code/AoC2024_2/inputs/day2.txt";
+    let file_path = "src/input.txt";
     let file = fs::read_to_string(file_path).expect("failed to read file");
 
     let data = file
@@ -33,7 +31,7 @@ fn main() {
             }
         }
     }
-    println!("{total}");
+    println!("Answer: {total}");
 }
 
 fn is_valid(array: &Vec<isize>) -> bool {
@@ -51,4 +49,3 @@ fn is_valid(array: &Vec<isize>) -> bool {
     }
     valid
 }
-
