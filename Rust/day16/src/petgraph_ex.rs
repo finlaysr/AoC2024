@@ -1,4 +1,4 @@
-use petgraph::dot::{Config, Dot};
+use petgraph::dot::Dot;
 use petgraph::graph::UnGraph;
 use petgraph::visit::EdgeRef;
 
