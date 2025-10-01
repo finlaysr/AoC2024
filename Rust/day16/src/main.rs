@@ -6,12 +6,19 @@ use petgraph::{
     visit::EdgeRef,
 };
 use std::fs;
-mod petgraph_ex;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct Pos {
     x: usize,
     y: usize,
+}
+impl Pos {
+    pub fn disp(&self) -> Pos {
+        return Pos {
+            x: self.x + 1,
+            y: self.y + 1,
+        };
+    }
 }
 
 const CW: [isize; 4] = [0, 1, 0, -1];
@@ -23,8 +30,6 @@ struct Info {
 }
 
 fn main() {
-    //petgraph_ex::main();
-
     let file_path = "src/test.txt";
     let file = fs::read_to_string(file_path).expect("failed to read file");
     let data = file.trim().split("\n").collect::<Vec<&str>>();
@@ -83,19 +88,19 @@ fn main() {
         maze.contains_node(end)
     );
     //let dist = dijkstra(&maze, start, Some(end), |e| *e.weight());
-    //
     let dist = astar(&maze, start, |fin| fin == end, |e| *e.weight(), |_| 0);
 
     println!("{:?}", dist);
     let (_, paths) = dist.unwrap();
     println!("path: {:?}", paths);
 
-    let mut maze_copy = data.clone();
+    //print maze with path
+    let mut maze_copy: Vec<Vec<char>> = data.iter().map(|d| d.chars().collect()).collect();
     for p in paths {
-        let mut chars: Vec<char> = maze_copy[p.y].chars().collect();
-        chars[p.x] = 'x';
+        maze_copy[p.y][p.x] = 'x';
     }
-    data.iter().for_each(|d| println!("{:?}", d));
+    let maze_copy: Vec<String> = maze_copy.iter().map(|m| m.into_iter().collect()).collect();
+    maze_copy.iter().for_each(|d| println!("{:?}", d));
 
     //println!("dist: {:?}", dist.get(&end).unwrap());
 }
@@ -108,34 +113,24 @@ fn mover(
     graph: &mut GraphMap<Pos, usize, Undirected>,
     info: &Info,
 ) {
-    // println!(
-    //     "New Mover, pos: {:?}, dir: {}, last_node: {:?}, edge_total: {}",
-    //     &pos, &dir, &last_node, &edge_total
-    // );
+    println!(
+        "New Mover, pos: {:?}, dir: {}, last_node: {:?}, edge_total: {}",
+        &pos.disp(),
+        &dir,
+        &last_node.disp(),
+        &edge_total
+    );
     let mut nexts: Vec<usize> = Vec::new();
-    let mut dists: Vec<usize> = Vec::new();
-    for i in 0..4 {
-        let next_dir = if dir + i > 3 {
-            (dir + i).wrapping_add_signed(-4)
-        } else {
-            dir + i
-        };
 
-        //check if wall
-        if !info.walls[pos.y.wrapping_add_signed(CW[3 - next_dir])]
-            [pos.x.wrapping_add_signed(CW[next_dir])]
-        {
-            //don't go in reverse
-            if dir.abs_diff(next_dir) != 2 {
-                nexts.push(next_dir);
-                dists.push(match dir.abs_diff(next_dir) {
-                    0 => 0,
-                    _ => 1000,
-                });
+    for i in 0..4 {
+        if !info.walls[pos.y.wrapping_add_signed(CW[3 - i])][pos.x.wrapping_add_signed(CW[i])] {
+            //dont go in reverse (2)
+            if i.abs_diff(dir) != 2 {
+                nexts.push(i);
             }
         }
     }
-    //println!("nexts: {:?}, dists: {:?}", nexts, dists);
+    println!("nexts: {:?}", nexts,);
 
     let mut last_node_new = last_node;
     let mut edge_total_new = edge_total;
@@ -157,18 +152,15 @@ fn mover(
         return;
     }
 
-    for (n, d) in nexts.iter().zip(dists.iter()) {
+    for n in nexts {
+        if n != dir {
+            edge_total_new += 1000;
+        }
+
         let next_pos = Pos {
-            x: pos.x.wrapping_add_signed(CW[*n]),
-            y: pos.y.wrapping_add_signed(CW[3 - *n]),
+            x: pos.x.wrapping_add_signed(CW[n]),
+            y: pos.y.wrapping_add_signed(CW[3 - n]),
         };
-        mover(
-            next_pos,
-            *n,
-            last_node_new,
-            edge_total_new + 1 + d,
-            graph,
-            info,
-        );
+        mover(next_pos, n, last_node_new, edge_total_new + 1, graph, info);
     }
 }
